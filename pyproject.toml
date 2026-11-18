@@ -16,6 +16,9 @@ classifiers = [
     "Topic :: Software Development :: Testing",
 ]
 
+[project.optional-dependencies]
+demo = ["packaging>=22"]
+
 [project.scripts]
 samplemeter = "samplemeter.cli:main"
 

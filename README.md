@@ -25,7 +25,8 @@ unique vs. paths.
 
 ## Quick start (no install)
 
-Requires CPython 3.10+ (developed and measured on 3.12.3). First, the corrected harness --
+Requires CPython 3.10+ (developed and measured on 3.12.3); the real-corpus demo also needs
+`packaging` (`pip install -e ".[demo]"`, or any environment that already ships it). First, the corrected harness --
 2,000 iterations, 2,000 distinct documents, exit code 0:
 
 ```bash
