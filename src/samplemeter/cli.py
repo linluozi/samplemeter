@@ -32,6 +32,14 @@ def _load_target(spec: str):
     return module, attr_path, obj
 
 
+def _short(path: str) -> str:
+    try:
+        rel = os.path.relpath(path)
+    except ValueError:
+        return path
+    return path if rel.startswith("..") else rel
+
+
 def _print_report(report: Report, *, degenerate: bool) -> None:
     print("samplemeter report")
     print(f"  nominal calls       : {report.nominal}")
@@ -44,9 +52,9 @@ def _print_report(report: Report, *, degenerate: bool) -> None:
     if report.repeated_seed_sites():
         print("  seed resets         :")
         for site in report.repeated_seed_sites():
-            print(f"    {site.filename}:{site.lineno} in {site.function}() x{site.calls}")
+            print(f"    {_short(site.filename)}:{site.lineno} in {site.function}() x{site.calls}")
     for finding in report.static_seed_findings:
-        print(f"  static              : {finding}")
+        print(f"  static              : {_short(finding)}")
     print(f"  verdict             : {'DEGENERATE' if degenerate else 'OK'}")
 
 

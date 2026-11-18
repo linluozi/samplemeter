@@ -25,14 +25,33 @@ unique vs. paths.
 
 ## Quick start (no install)
 
-Requires CPython 3.10+ (developed and measured on 3.12.3).
+Requires CPython 3.10+ (developed and measured on 3.12.3). First, the corrected harness --
+2,000 iterations, 2,000 distinct documents, exit code 0:
+
+```bash
+PYTHONPATH=src python3 -m samplemeter run demo/honest_harness.py \
+    --target demo/honest_lib.py:resolve --min-unique 1000
+```
+
+```
+harness iterations: 2000, distinct rows: 2000
+samplemeter report
+  nominal calls       : 2000
+  unique inputs       : 2000  (sha256 of canonical args)
+  unique paths        : 14  (executed-line signatures)
+  unique (input,path) : 2000
+  inflation           : 1.00x
+  opaque inputs       : 0
+  calls that raised   : 0
+  verdict             : OK
+```
+
+Now the harness this tool exists for -- same loop counter, one document, exit code 1:
 
 ```bash
 PYTHONPATH=src python3 -m samplemeter run demo/inflated_harness.py \
     --target demo/inflated_lib.py:resolve
 ```
-
-Real output from this repository (2026-11-18, CPython 3.12.3):
 
 ```
 harness iterations: 2000, distinct rows: 1
@@ -49,9 +68,8 @@ samplemeter report
   verdict             : DEGENERATE
 ```
 
-Exit code is 1, so CI can refuse the claim. The same workload with one RNG created once and
-passed in (`demo/honest_harness.py`) gives `2000 nominal / 2000 unique inputs / 14 paths`,
-inflation `1.00x`, verdict `OK`, exit 0.
+Both reports are verbatim output from 2026-11-18, CPython 3.12.3. The non-zero exit code on
+DEGENERATE is deliberate, so CI can refuse the claim.
 
 ## What it reports
 
