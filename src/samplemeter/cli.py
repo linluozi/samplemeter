@@ -58,10 +58,17 @@ def _print_report(report: Report, *, degenerate: bool) -> None:
     print(f"  verdict             : {'DEGENERATE' if degenerate else 'OK'}")
 
 
-def _verdict(report: Report, min_unique: int | None, max_inflation: float) -> bool:
+def _verdict(
+    report: Report,
+    min_unique: int | None,
+    min_paths: int | None,
+    max_inflation: float,
+) -> bool:
     reasons = []
     if min_unique is not None and report.unique_inputs < min_unique:
         reasons.append(f"unique inputs {report.unique_inputs} < --min-unique {min_unique}")
+    if min_paths is not None and report.unique_paths < min_paths:
+        reasons.append(f"unique paths {report.unique_paths} < --min-paths {min_paths}")
     if report.repeated_seed_sites():
         reasons.append("the same seed site ran more than once")
     if (
@@ -100,7 +107,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         auditor._remove_seed_probe()
 
     report = auditor.report()
-    degenerate = _verdict(report, args.min_unique, args.max_inflation)
+    degenerate = _verdict(report, args.min_unique, args.min_paths, args.max_inflation)
     if args.json:
         payload = report.as_dict()
         payload["degenerate"] = degenerate
@@ -124,6 +131,7 @@ def main(argv: list[str] | None = None) -> int:
         help="path/to/module.py:function (dotted attributes allowed)",
     )
     run.add_argument("--min-unique", type=int, default=None)
+    run.add_argument("--min-paths", type=int, default=None)
     run.add_argument("--max-inflation", type=float, default=2.0)
     run.add_argument("--scope", choices=["all", "target"], default="target")
     run.add_argument("--json", action="store_true")

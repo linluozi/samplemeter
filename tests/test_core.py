@@ -247,6 +247,20 @@ class CliTests(unittest.TestCase):
         self.assertEqual(payload["unique_inputs"], 200)
         self.assertFalse(payload["degenerate"])
 
+    def test_path_collapse_is_caught_by_min_paths(self):
+        result = self._run(
+            "demo/collapsed_harness.py",
+            "demo/collapsed_lib.py:validate",
+            "--json",
+            "--min-paths",
+            "5",
+        )
+        self.assertEqual(result.returncode, 1, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["unique_inputs"], 200)
+        self.assertEqual(payload["unique_paths"], 1)
+        self.assertTrue(payload["degenerate"])
+
     def test_real_corpus_harness_runs(self):
         result = self._run(
             "demo/real_corpus_harness.py",

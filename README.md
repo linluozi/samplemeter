@@ -84,15 +84,17 @@ DEGENERATE is deliberate, so CI can refuse the claim.
 | `seed resets` | runtime probe: same `random.seed(...)` call site executed more than once |
 | `static findings` | AST scan: `random.seed(...)` / `Random(...)` written inside a `for`/`while` body |
 
-`--min-unique N` fails when distinct inputs fall below `N`; `--max-inflation X` (default 2.0)
-fails when inflation is at least `X` **and** every call took the same path. `--json` emits the
+`--min-unique N` fails when distinct inputs fall below `N`; `--min-paths N` fails when the
+number of distinct execution paths falls below `N` (the "500 documents, one happy path" case);
+`--max-inflation X` (default 2.0) fails when inflation is at least `X` **and** every call took
+the same path. `--json` emits the
 same data as machine-readable JSON (harness stdout is redirected to stderr to keep the JSON clean).
 
 ### CLI
 
 ```bash
 samplemeter run HARNESS.py --target path/to/module.py:function \
-    [--min-unique N] [--max-inflation X] [--scope target|all] [--json]
+    [--min-unique N] [--min-paths N] [--max-inflation X] [--scope target|all] [--json]
 ```
 
 `--scope target` (default) hashes only lines from the target function's own file, which keeps
@@ -146,7 +148,24 @@ nominal 392 | unique inputs 369 | paths 43 | unique (input,path) 369 | inflation
 23 of the 392 lines are exact duplicates (the same requirement appearing in several
 distributions' metadata), which is why the honest inflation is 1.06x rather than 1.00x.
 
-**4. The cost of measuring** (`PYTHONPATH=src python3 demo/overhead.py`): 392 real
+**4. Diversity without branch coverage**: 500 distinct documents that all pass the same
+validation branch:
+
+```
+PYTHONPATH=src python3 -m samplemeter run demo/collapsed_harness.py \
+    --target demo/collapsed_lib.py:validate --min-paths 5
+```
+
+```
+documents: 500, accepted: 500
+nominal 500 | unique inputs 500 | paths 1 | unique (input,path) 500 | inflation 1.00x | DEGENERATE
+reason: unique paths 1 < --min-paths 5
+```
+
+Inflation alone would pass this harness; the path signature is what exposes it. This is why
+the report keeps all four numbers instead of a single score.
+
+**5. The cost of measuring** (`PYTHONPATH=src python3 demo/overhead.py`): 392 real
 requirement lines take **24.7 ms** plain and **370.3 ms** traced — a **15.0x** slowdown,
 because `sys.settrace` emits a line event per executed line. This is an audit pass you run
 once to validate a harness, not something to leave enabled in a timing loop.
@@ -157,13 +176,13 @@ once to validate a harness, not something to leave enabled in a timing loop.
 PYTHONPATH=src python3 -m unittest discover -s tests -v
 ```
 
-`23 tests, 0 failures, 0.42 s` (measured). They cover: type-tagged fingerprints (int vs float
+`24 tests, 0 failures, 0.49 s` (measured). They cover: type-tagged fingerprints (int vs float
 vs bool vs str, NaN, -0.0, non-ASCII, bytes), dict/set order invariance, deep-nesting bounds,
 opaque-object marking, unique-vs-nominal counting, kwargs as part of the input, path
 distinction across branches, wrapper transparency, exception propagation and counting,
 `self` skipping for methods, runtime seed-reset detection and probe restoration on exception,
-AST loop detection and syntax-error handling, plus three CLI end-to-end runs (inflated → exit 1,
-honest → exit 0, real corpus → exit 0).
+AST loop detection and syntax-error handling, plus four CLI end-to-end runs (inflated → exit 1, honest → exit 0,
+collapsed with `--min-paths` → exit 1, real corpus → exit 0).
 
 ## Limits
 
