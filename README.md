@@ -191,7 +191,7 @@ once to validate a harness, not something to leave enabled in a timing loop.
 PYTHONPATH=src python3 -m unittest discover -s tests -v
 ```
 
-`28 tests, 0 failures, 0.52 s` (measured on CPython 3.12.3). The same suite also passes on
+`28 tests, 0 failures, 0.51 s` (measured on CPython 3.12.3). The same suite also passes on
 3.10 and 3.11 in CI (run
 [44221727460](https://github.com/linluozi/samplemeter/actions/runs/44221727460), all three
 matrix jobs green, 2026-11-18). They cover: type-tagged fingerprints (int vs float
