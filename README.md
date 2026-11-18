@@ -1,5 +1,7 @@
 # samplemeter
 
+[![tests](https://github.com/linluozi/samplemeter/actions/workflows/tests.yml/badge.svg)](https://github.com/linluozi/samplemeter/actions/workflows/tests.yml)
+
 A harness that loops 2,000 times reports 2,000 samples. `samplemeter` measures how many
 **distinct inputs** actually reached the function under test, how many **distinct execution
 paths** those calls took, and whether the generator re-seeded itself on every iteration.
@@ -188,7 +190,10 @@ once to validate a harness, not something to leave enabled in a timing loop.
 PYTHONPATH=src python3 -m unittest discover -s tests -v
 ```
 
-`27 tests, 0 failures, 0.50 s` (measured). They cover: type-tagged fingerprints (int vs float
+`27 tests, 0 failures, 0.50 s` (measured on CPython 3.12.3). The same suite also passes on
+3.10 and 3.11 in CI (run
+[44221727460](https://github.com/linluozi/samplemeter/actions/runs/44221727460), all three
+matrix jobs green, 2026-11-18). They cover: type-tagged fingerprints (int vs float
 vs bool vs str, NaN, -0.0, non-ASCII, bytes), dict/set order invariance, deep-nesting bounds,
 opaque-object marking, unique-vs-nominal counting, kwargs as part of the input, path
 distinction across branches, wrapper transparency, exception propagation and counting,
