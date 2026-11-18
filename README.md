@@ -191,7 +191,7 @@ once to validate a harness, not something to leave enabled in a timing loop.
 PYTHONPATH=src python3 -m unittest discover -s tests -v
 ```
 
-`27 tests, 0 failures, 0.50 s` (measured on CPython 3.12.3). The same suite also passes on
+`28 tests, 0 failures, 0.52 s` (measured on CPython 3.12.3). The same suite also passes on
 3.10 and 3.11 in CI (run
 [44221727460](https://github.com/linluozi/samplemeter/actions/runs/44221727460), all three
 matrix jobs green, 2026-11-18). They cover: type-tagged fingerprints (int vs float
@@ -199,12 +199,13 @@ vs bool vs str, NaN, -0.0, non-ASCII, bytes), dict/set order invariance, deep-ne
 opaque-object marking, unique-vs-nominal counting, kwargs as part of the input, path
 distinction across branches, wrapper transparency, exception propagation and counting,
 `self` skipping for methods, runtime seed-reset detection and probe restoration on exception,
-AST loop detection and syntax-error handling, plus output-diversity counting, a nested-function method-detection regression, a top-input ranking check and four CLI end-to-end runs (inflated → exit 1, honest → exit 0,
+AST loop detection and syntax-error handling, plus output-diversity counting, nested-function method detection, a recursion regression (verified to fail against a shared-buffer variant), a top-input ranking check and four CLI end-to-end runs (inflated → exit 1, honest → exit 0,
 collapsed with `--min-paths` → exit 1, real corpus → exit 0).
 
 ## Limits
 
 - Single-threaded only: `sys.settrace` is process-global, so concurrent auditing is undefined.
+- Re-entrant (recursive) calls are supported: every active call keeps its own line buffer.
 - The wrapper must replace the function object the harness resolves (the CLI does this on the
   target module before running the harness, so `from mod import func` is fine).
 - Inputs are compared by canonical value, not by semantic equivalence: two documents that

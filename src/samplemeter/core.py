@@ -181,6 +181,7 @@ class Auditor:
         self.scope = scope
         self.hash_lines = hash_lines
         self._records: list[CallRecord] = []
+        self._stack: list[list[tuple[str, int]]] = []
         self._previews: dict[str, str] = {}
         self._seed_calls: dict[tuple[str, int, str], int] = {}
         self._target_file: str | None = None
@@ -199,10 +200,10 @@ class Auditor:
         return self._line_tracer
 
     def _line_tracer(self, frame, event, arg):
-        if event == "line":
-            lines = self._current
-            if lines is not None:
-                lines.append((frame.f_code.co_filename, frame.f_lineno))
+        if event == "line" and self._stack:
+            # A recursive (re-entrant) call pushes its own frame, so lines must
+            # go to the innermost active call, not to a single shared list.
+            self._stack[-1].append((frame.f_code.co_filename, frame.f_lineno))
         return self._line_tracer
 
     # -- seeding -----------------------------------------------------------
@@ -242,7 +243,7 @@ class Auditor:
                 self._previews[input_fp] = canonical[:200]
             lines: list[tuple[str, int]] = []
             output_fp = ""
-            self._current = lines
+            self._stack.append(lines)
             previous = sys.gettrace()
             raised = False
             sys.settrace(self._tracer)
@@ -256,7 +257,7 @@ class Auditor:
                 raise
             finally:
                 sys.settrace(previous)
-                self._current = None
+                self._stack.pop()
                 # Collapse consecutive duplicates, then hash the ordered lines.
                 compact: list[tuple[str, int]] = []
                 for item in lines:

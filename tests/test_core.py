@@ -144,6 +144,29 @@ class AuditorTests(unittest.TestCase):
         self.assertEqual(report.unique_inputs, 1)
         self.assertEqual(report.raised, 2)
 
+    def test_recursive_calls_keep_separate_line_buffers(self):
+        holder = {}
+
+        def rec(n):
+            if n == 0:
+                return 0
+            value = holder["wrapped"](n - 1)
+            return value + 1
+
+        auditor = Auditor()
+        wrapped = auditor.wrap(rec)
+        holder["wrapped"] = wrapped
+        self.assertEqual(wrapped(3), 3)
+        report = auditor.report()
+        self.assertEqual(report.nominal, 4)
+        self.assertEqual(report.unique_inputs, 4)
+        self.assertTrue(all(record.lines for record in auditor._records))
+        # The outermost call executes three distinct lines: the guard, the
+        # recursive assignment, and the return *after* the nested call. With a
+        # single shared buffer the last one is lost when the inner call ends.
+        self.assertEqual(len(auditor._records[-1].lines), 3)
+        self.assertGreaterEqual(report.unique_paths, 2)
+
     def test_scope_validation(self):
         with self.assertRaises(ValueError):
             Auditor(scope="everything")
