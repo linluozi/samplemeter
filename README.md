@@ -40,6 +40,7 @@ samplemeter report
   unique inputs       : 2000  (sha256 of canonical args)
   unique paths        : 14  (executed-line signatures)
   unique (input,path) : 2000
+  unique outputs      : 2000  (sha256 of returned value)
   inflation           : 1.00x
   opaque inputs       : 0
   calls that raised   : 0
@@ -60,6 +61,7 @@ samplemeter report
   unique inputs       : 1  (sha256 of canonical args)
   unique paths        : 1  (executed-line signatures)
   unique (input,path) : 1
+  unique outputs      : 1  (sha256 of returned value)
   inflation           : 2000.00x
   opaque inputs       : 0
   top input           : 2000 call(s) tuple[tuple[dict{str:base=str:https://example.com/a/,str:items=list[dict{str:link=str:../post/0},dict{str:link=str:../post/1}]}],dict{}]
@@ -80,6 +82,7 @@ DEGENERATE is deliberate, so CI can refuse the claim.
 | `unique inputs` | sha256 of the canonical, type-tagged argument tuple (positional + keyword) |
 | `unique paths` | sha256 of the ordered sequence of executed `(file, line)` pairs per call |
 | `unique (input, path)` | distinct pairs; catches "many docs, one branch" |
+| `unique outputs` | sha256 of each call's return value (or exception type); catches "many inputs, one answer" |
 | `inflation` | `nominal / unique inputs` |
 | `opaque inputs` | arguments whose address-dependent `repr` cannot be de-duplicated (reported, never counted as unique) |
 | `top input` | printed only when duplicates exist: how many calls shared the most frequent input, plus a 200-char preview of it |
@@ -166,7 +169,7 @@ PYTHONPATH=src python3 -m samplemeter run demo/collapsed_harness.py \
 
 ```
 documents: 500, accepted: 500
-nominal 500 | unique inputs 500 | paths 1 | unique (input,path) 500 | inflation 1.00x | DEGENERATE
+nominal 500 | unique inputs 500 | paths 1 | unique (input,path) 500 | outputs 1 | inflation 1.00x | DEGENERATE
 reason: unique paths 1 < --min-paths 5
 ```
 
@@ -174,7 +177,7 @@ Inflation alone would pass this harness; the path signature is what exposes it. 
 the report keeps all four numbers instead of a single score.
 
 **5. The cost of measuring** (`PYTHONPATH=src python3 demo/overhead.py`): 392 real
-requirement lines take **24.7 ms** plain and **370.3 ms** traced — a **15.0x** slowdown,
+requirement lines take **24.7 ms** plain and **374.6 ms** traced — a **15.2x** slowdown,
 because `sys.settrace` emits a line event per executed line. This is an audit pass you run
 once to validate a harness, not something to leave enabled in a timing loop.
 
@@ -184,12 +187,12 @@ once to validate a harness, not something to leave enabled in a timing loop.
 PYTHONPATH=src python3 -m unittest discover -s tests -v
 ```
 
-`25 tests, 0 failures, 0.48 s` (measured). They cover: type-tagged fingerprints (int vs float
+`27 tests, 0 failures, 0.50 s` (measured). They cover: type-tagged fingerprints (int vs float
 vs bool vs str, NaN, -0.0, non-ASCII, bytes), dict/set order invariance, deep-nesting bounds,
 opaque-object marking, unique-vs-nominal counting, kwargs as part of the input, path
 distinction across branches, wrapper transparency, exception propagation and counting,
 `self` skipping for methods, runtime seed-reset detection and probe restoration on exception,
-AST loop detection and syntax-error handling, plus a top-input ranking check and four CLI end-to-end runs (inflated → exit 1, honest → exit 0,
+AST loop detection and syntax-error handling, plus output-diversity counting, a nested-function method-detection regression, a top-input ranking check and four CLI end-to-end runs (inflated → exit 1, honest → exit 0,
 collapsed with `--min-paths` → exit 1, real corpus → exit 0).
 
 ## Limits

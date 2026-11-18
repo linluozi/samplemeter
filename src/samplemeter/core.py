@@ -85,6 +85,7 @@ def _digest(text: str) -> str:
 class CallRecord:
     input_fp: str
     path_fp: str
+    output_fp: str
     lines: tuple[tuple[str, int], ...]
     raised: bool
 
@@ -103,6 +104,7 @@ class Report:
     unique_inputs: int
     unique_paths: int
     unique_pairs: int
+    unique_outputs: int
     opaque_inputs: int
     input_counts: dict[str, int] = field(default_factory=dict)
     input_previews: dict[str, str] = field(default_factory=dict)
@@ -145,6 +147,7 @@ class Report:
             "unique_inputs": self.unique_inputs,
             "unique_paths": self.unique_paths,
             "unique_pairs": self.unique_pairs,
+            "unique_outputs": self.unique_outputs,
             "inflation": round(self.inflation, 4),
             "opaque_inputs": self.opaque_inputs,
             "top_inputs": [
@@ -221,10 +224,15 @@ class Auditor:
 
     # -- wrapping ----------------------------------------------------------
     def wrap(self, func: Callable[..., Any], skip_first: bool | None = None) -> Callable[..., Any]:
-        self._target_file = func.__code__.co_filename
-        qualname = getattr(func, "__qualname__", "")
+        target = getattr(func, "__func__", func)  # unwrap bound methods
+        code = target.__code__
+        self._target_file = code.co_filename
+        qualname = getattr(target, "__qualname__", "")
         if skip_first is None:
-            skip_first = "." in qualname  # bound/unbound method: drop self/cls
+            # Only drop the first argument for real methods: a nested function
+            # (``<locals>``) also has a dotted qualname but no self/cls.
+            first = code.co_varnames[0] if code.co_varnames else ""
+            skip_first = first in ("self", "cls") and "<locals>" not in qualname
 
         def wrapper(*args, **kwargs):
             fp_args = args[1:] if skip_first else args
@@ -233,14 +241,18 @@ class Auditor:
             if input_fp not in self._previews:
                 self._previews[input_fp] = canonical[:200]
             lines: list[tuple[str, int]] = []
+            output_fp = ""
             self._current = lines
             previous = sys.gettrace()
             raised = False
             sys.settrace(self._tracer)
             try:
-                return func(*args, **kwargs)
-            except BaseException:
+                result = func(*args, **kwargs)
+                output_fp = _digest(fingerprint(result))
+                return result
+            except BaseException as exc:
                 raised = True
+                output_fp = f"exc:{type(exc).__name__}"
                 raise
             finally:
                 sys.settrace(previous)
@@ -255,13 +267,14 @@ class Auditor:
                     CallRecord(
                         input_fp=input_fp,
                         path_fp=path_fp,
+                        output_fp=output_fp,
                         lines=tuple(compact),
                         raised=raised,
                     )
                 )
 
-        wrapper.__name__ = getattr(func, "__name__", "wrapped")
-        wrapper.__qualname__ = getattr(func, "__qualname__", wrapper.__name__)
+        wrapper.__name__ = getattr(target, "__name__", "wrapped")
+        wrapper.__qualname__ = getattr(target, "__qualname__", wrapper.__name__)
         wrapper.__doc__ = getattr(func, "__doc__", None)
         wrapper.__wrapped__ = func
         return wrapper
@@ -271,7 +284,9 @@ class Auditor:
         input_counts: dict[str, int] = {}
         path_counts: dict[str, int] = {}
         pairs: set[tuple[str, str]] = set()
+        outputs: set[str] = set()
         for rec in self._records:
+            outputs.add(rec.output_fp)
             input_counts[rec.input_fp] = input_counts.get(rec.input_fp, 0) + 1
             path_counts[rec.path_fp] = path_counts.get(rec.path_fp, 0) + 1
             pairs.add((rec.input_fp, rec.path_fp))
@@ -285,6 +300,7 @@ class Auditor:
             unique_inputs=len(input_counts),
             unique_paths=len(path_counts),
             unique_pairs=len(pairs),
+            unique_outputs=len(outputs),
             opaque_inputs=opaque,
             input_counts=input_counts,
             input_previews=dict(self._previews),

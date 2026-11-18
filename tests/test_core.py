@@ -101,6 +101,27 @@ class AuditorTests(unittest.TestCase):
         self.assertEqual(report.unique_inputs, 3)
         self.assertGreaterEqual(report.unique_paths, 2)
 
+    def test_same_output_is_counted_once(self):
+        auditor = Auditor()
+
+        def constant(value):
+            return "same"
+
+        wrapped = auditor.wrap(constant)
+        wrapped(1)
+        wrapped(2)
+        wrapped(3)
+        report = auditor.report()
+        self.assertEqual(report.unique_inputs, 3)
+        self.assertEqual(report.unique_outputs, 1)
+
+    def test_distinct_outputs_are_counted(self):
+        auditor = Auditor()
+        wrapped = auditor.wrap(branchy)
+        wrapped(1)
+        wrapped(2)
+        self.assertEqual(auditor.report().unique_outputs, 2)
+
     def test_wrapper_is_transparent(self):
         auditor = Auditor()
         wrapped = auditor.wrap(branchy)

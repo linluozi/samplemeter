@@ -46,6 +46,7 @@ def _print_report(report: Report, *, degenerate: bool) -> None:
     print(f"  unique inputs       : {report.unique_inputs}  (sha256 of canonical args)")
     print(f"  unique paths        : {report.unique_paths}  (executed-line signatures)")
     print(f"  unique (input,path) : {report.unique_pairs}")
+    print(f"  unique outputs      : {report.unique_outputs}  (sha256 of returned value)")
     print(f"  inflation           : {report.inflation:.2f}x")
     print(f"  opaque inputs       : {report.opaque_inputs}")
     if report.nominal > report.unique_inputs:
