@@ -149,6 +149,12 @@ nominal 392 | unique inputs 369 | paths 43 | unique (input,path) 369 | inflation
 
 23 of the 392 lines are exact duplicates (the same requirement appearing in several
 distributions' metadata), which is why the honest inflation is 1.06x rather than 1.00x.
+An independent oracle for that number needs no library code:
+
+```bash
+python3 -c "import importlib.metadata as md; L=[r for d in md.distributions() for r in (d.requires or [])]; print(len(L), len(set(L)))"
+# 392 369 -- matches the tool's nominal / unique inputs exactly
+```
 
 **4. Diversity without branch coverage**: 500 distinct documents that all pass the same
 validation branch:
