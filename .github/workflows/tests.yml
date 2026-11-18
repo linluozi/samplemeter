@@ -1,0 +1,30 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: pip install -e .
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+      - name: CLI smoke (honest harness exits 0)
+        run: python -m samplemeter run demo/honest_harness.py --target demo/honest_lib.py:resolve --min-unique 1000
+      - name: CLI smoke (inflated harness must exit 1)
+        run: |
+          if python -m samplemeter run demo/inflated_harness.py --target demo/inflated_lib.py:resolve; then
+            echo "expected a non-zero exit for a degenerate harness" >&2
+            exit 1
+          fi
