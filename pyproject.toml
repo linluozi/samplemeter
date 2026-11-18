@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "samplemeter"
+version = "1.0.0"
+description = "Count the distinct inputs and execution paths behind a test harness's nominal sample count"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "linluozi" }]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Software Development :: Testing",
+]
+
+[project.scripts]
+samplemeter = "samplemeter.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
