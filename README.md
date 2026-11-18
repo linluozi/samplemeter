@@ -62,6 +62,7 @@ samplemeter report
   unique (input,path) : 1
   inflation           : 2000.00x
   opaque inputs       : 0
+  top input           : 2000 call(s) tuple[tuple[dict{str:base=str:https://example.com/a/,str:items=list[dict{str:link=str:../post/0},dict{str:link=str:../post/1}]}],dict{}]
   calls that raised   : 0
   seed resets         :
     demo/inflated_lib.py:8 in one_doc() x2000
@@ -81,6 +82,7 @@ DEGENERATE is deliberate, so CI can refuse the claim.
 | `unique (input, path)` | distinct pairs; catches "many docs, one branch" |
 | `inflation` | `nominal / unique inputs` |
 | `opaque inputs` | arguments whose address-dependent `repr` cannot be de-duplicated (reported, never counted as unique) |
+| `top input` | printed only when duplicates exist: how many calls shared the most frequent input, plus a 200-char preview of it |
 | `seed resets` | runtime probe: same `random.seed(...)` call site executed more than once |
 | `static findings` | AST scan: `random.seed(...)` / `Random(...)` written inside a `for`/`while` body |
 
@@ -176,12 +178,12 @@ once to validate a harness, not something to leave enabled in a timing loop.
 PYTHONPATH=src python3 -m unittest discover -s tests -v
 ```
 
-`24 tests, 0 failures, 0.49 s` (measured). They cover: type-tagged fingerprints (int vs float
+`25 tests, 0 failures, 0.48 s` (measured). They cover: type-tagged fingerprints (int vs float
 vs bool vs str, NaN, -0.0, non-ASCII, bytes), dict/set order invariance, deep-nesting bounds,
 opaque-object marking, unique-vs-nominal counting, kwargs as part of the input, path
 distinction across branches, wrapper transparency, exception propagation and counting,
 `self` skipping for methods, runtime seed-reset detection and probe restoration on exception,
-AST loop detection and syntax-error handling, plus four CLI end-to-end runs (inflated → exit 1, honest → exit 0,
+AST loop detection and syntax-error handling, plus a top-input ranking check and four CLI end-to-end runs (inflated → exit 1, honest → exit 0,
 collapsed with `--min-paths` → exit 1, real corpus → exit 0).
 
 ## Limits

@@ -105,10 +105,15 @@ class Report:
     unique_pairs: int
     opaque_inputs: int
     input_counts: dict[str, int] = field(default_factory=dict)
+    input_previews: dict[str, str] = field(default_factory=dict)
     path_counts: dict[str, int] = field(default_factory=dict)
     seed_resets: list[SeedReset] = field(default_factory=list)
     static_seed_findings: list[str] = field(default_factory=list)
     raised: int = 0
+
+    def top_inputs(self, limit: int = 3) -> list[tuple[int, str]]:
+        ranked = sorted(self.input_counts.items(), key=lambda kv: (-kv[1], kv[0]))
+        return [(count, self.input_previews.get(fp, fp)) for fp, count in ranked[:limit]]
 
     @property
     def inflation(self) -> float:
@@ -142,6 +147,10 @@ class Report:
             "unique_pairs": self.unique_pairs,
             "inflation": round(self.inflation, 4),
             "opaque_inputs": self.opaque_inputs,
+            "top_inputs": [
+                {"calls": count, "preview": preview}
+                for count, preview in self.top_inputs(3)
+            ],
             "raised_calls": self.raised,
             "path_collapse": self.path_collapse,
             "repeated_seed_sites": [
@@ -169,6 +178,7 @@ class Auditor:
         self.scope = scope
         self.hash_lines = hash_lines
         self._records: list[CallRecord] = []
+        self._previews: dict[str, str] = {}
         self._seed_calls: dict[tuple[str, int, str], int] = {}
         self._target_file: str | None = None
         self._orig_seed: Callable[..., None] | None = None
@@ -218,7 +228,10 @@ class Auditor:
 
         def wrapper(*args, **kwargs):
             fp_args = args[1:] if skip_first else args
-            input_fp = _digest(fingerprint((fp_args, kwargs)))
+            canonical = fingerprint((fp_args, kwargs))
+            input_fp = _digest(canonical)
+            if input_fp not in self._previews:
+                self._previews[input_fp] = canonical[:200]
             lines: list[tuple[str, int]] = []
             self._current = lines
             previous = sys.gettrace()
@@ -274,6 +287,7 @@ class Auditor:
             unique_pairs=len(pairs),
             opaque_inputs=opaque,
             input_counts=input_counts,
+            input_previews=dict(self._previews),
             path_counts=path_counts,
             seed_resets=seeds,
             static_seed_findings=list(self.static_seed_findings),
@@ -283,6 +297,7 @@ class Auditor:
     def reset(self) -> None:
         self._records.clear()
         self._seed_calls.clear()
+        self._previews.clear()
 
 
 def scan_seed_resets(path: str) -> list[str]:

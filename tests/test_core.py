@@ -80,6 +80,17 @@ class AuditorTests(unittest.TestCase):
         wrapped(value=1)
         self.assertEqual(auditor.report().unique_inputs, 2)
 
+    def test_top_input_shows_the_dominant_sample(self):
+        auditor = Auditor()
+        wrapped = auditor.wrap(branchy)
+        for _ in range(7):
+            wrapped("same")
+        wrapped("other")
+        report = auditor.report()
+        top = report.top_inputs(1)[0]
+        self.assertEqual(top[0], 7)
+        self.assertIn("str:same", top[1])
+
     def test_paths_are_distinguished(self):
         auditor = Auditor()
         wrapped = auditor.wrap(branchy)

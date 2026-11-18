@@ -48,6 +48,9 @@ def _print_report(report: Report, *, degenerate: bool) -> None:
     print(f"  unique (input,path) : {report.unique_pairs}")
     print(f"  inflation           : {report.inflation:.2f}x")
     print(f"  opaque inputs       : {report.opaque_inputs}")
+    if report.nominal > report.unique_inputs:
+        for count, preview in report.top_inputs(3):
+            print(f"  top input           : {count} call(s) {preview}")
     print(f"  calls that raised   : {report.raised}")
     if report.repeated_seed_sites():
         print("  seed resets         :")
