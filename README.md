@@ -22,14 +22,15 @@ combinations — a 200x inflation.
 Existing tools do not answer this question: `coverage.py` reports which lines ran at least
 once across the whole session, `hypothesis` counts examples only for its own strategies, and
 a profiler reports time, not input identity. `samplemeter` fingerprints each call's arguments
-(canonicalised, type-tagged) and each call's executed-line signature, then reports nominal vs.
-unique vs. paths.
+(canonicalised, type-tagged) and each call's executed-line signature, then reports nominal vs. unique inputs vs.
+paths vs. outputs.
 
 ## Quick start (no install)
 
 Requires CPython 3.10+ (developed and measured on 3.12.3); the real-corpus demo also needs
-`packaging` (`pip install -e ".[demo]"`, or any environment that already ships it). First, the corrected harness --
-2,000 iterations, 2,000 distinct documents, exit code 0:
+`packaging` (`pip install -e ".[demo]"`, or any environment that already ships it).
+
+First, the corrected harness -- 2,000 iterations, 2,000 distinct documents, exit code 0:
 
 ```bash
 PYTHONPATH=src python3 -m samplemeter run demo/honest_harness.py \
