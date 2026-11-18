@@ -78,6 +78,18 @@ samplemeter report
 Both reports are verbatim output from 2026-11-18, CPython 3.12.3. The non-zero exit code on
 DEGENERATE is deliberate, so CI can refuse the claim.
 
+## Install
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -e ".[demo]"   # editable, with demo extras
+# or build a wheel and install that
+python3 -m build --wheel && pip install dist/samplemeter-1.0.0-py3-none-any.whl
+```
+
+Verified on 2026-11-18: the wheel built as `samplemeter-1.0.0-py3-none-any.whl`, installed
+into a fresh venv, and `samplemeter run ... --min-unique 190` returned `OK` (exit 0) from an
+unrelated working directory.
+
 ## What it reports
 
 | field | meaning |
